@@ -9,3 +9,4 @@ F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Domain\obj\Debug\net9.0\D
 F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Domain\obj\Debug\net9.0\refint\Domain.dll
 F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Domain\obj\Debug\net9.0\Domain.pdb
 F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Domain\obj\Debug\net9.0\ref\Domain.dll
+F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Domain\obj\Debug\net9.0\Domain.sourcelink.json

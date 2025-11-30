@@ -13,3 +13,4 @@ F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Application\obj\Debug\net
 F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Application\obj\Debug\net9.0\refint\Application.dll
 F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Application\obj\Debug\net9.0\Application.pdb
 F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Application\obj\Debug\net9.0\ref\Application.dll
+F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Application\obj\Debug\net9.0\Application.sourcelink.json

@@ -155,3 +155,4 @@ F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Api\obj\Debug\net9.0\stat
 F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Api\obj\Debug\net9.0\Api.csproj.Up2Date
 F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Api\obj\Debug\net9.0\Api.genruntimeconfig.cache
 F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Api\obj\Debug\net9.0\ref\Api.dll
+F:\midnight\sourceCode\Wpf\UsedCarDashboard\src\Server\Api\obj\Debug\net9.0\Api.sourcelink.json
