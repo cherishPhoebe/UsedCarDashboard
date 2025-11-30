@@ -11,12 +11,12 @@ namespace Api.DependencyInjection
         protected override void Load(ContainerBuilder builder)
         {
             // 注册仓储层
-            builder.RegisterType<UserRepository>().As<IUserRepository>().InstancePerLifetimeScope();
+            //builder.RegisterType<UserRepository>().As<IUserRepository>().InstancePerLifetimeScope();
             builder.RegisterType<UnitOfWork>().As<IUnitOfWork>().InstancePerLifetimeScope();
 
             // 注册服务层
-            builder.RegisterType<AuthService>().As<IAuthService>().InstancePerLifetimeScope();
-            builder.RegisterType<JwtService>().As<IJwtService>().InstancePerLifetimeScope();
+            //builder.RegisterType<AuthService>().As<IAuthService>().InstancePerLifetimeScope();
+            //builder.RegisterType<JwtService>().As<IJwtService>().InstancePerLifetimeScope();
         }
     }
 
