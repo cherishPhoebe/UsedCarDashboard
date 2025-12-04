@@ -1,5 +1,5 @@
-﻿using Domain.Interfaces.Services;
-using Domain.Models;
+﻿using Domain.Dtos.Auth;
+using Domain.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers
@@ -8,49 +8,21 @@ namespace Api.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly IAuthService _authService;
-        private readonly ILogger<AuthController> _logger;
-
-        public AuthController(IAuthService authService, ILogger<AuthController> logger)
-        {
-            _authService = authService;
-            _logger = logger;
-        }
+        private readonly IAuthService _auth;
+        public AuthController(IAuthService auth) => _auth = auth;
 
         [HttpPost("login")]
-        public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequestDto req)
         {
-            try
-            {
-                var result = await _authService.LoginAsync(request);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "登录过程中发生错误");
-                return StatusCode(500, new AuthResponse { Success = false, Message = "服务器内部错误" });
-            }
+            var (access, refresh) = await _auth.LoginAsync(req.UserName, req.Password);
+            return Ok(new { accessToken = access, refreshToken = refresh });
         }
 
-        [HttpPost("register")]
-        public async Task<ActionResult<AuthResponse>> Register([FromBody] RegisterRequest request)
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshRequestDto req)
         {
-            try
-            {
-                var result = await _authService.RegisterAsync(request);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "注册过程中发生错误");
-                return StatusCode(500, new AuthResponse { Success = false, Message = "服务器内部错误" });
-            }
-        }
-
-        [HttpGet("verification-code")]
-        public ActionResult<string> GetVerificationCode()
-        {
-            return Ok(_authService.GenerateVerificationCode());
+            var (access, refresh) = await _auth.RefreshAsync(req.RefreshToken);
+            return Ok(new { accessToken = access, refreshToken = refresh });
         }
     }
 }

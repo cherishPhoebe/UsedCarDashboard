@@ -1,8 +1,8 @@
 
-using Api.DependencyInjection;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Infrastructure.Configurations;
+using Infrastructure.DI;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -12,15 +12,11 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 // 使用Autofac作为DI容器
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
-builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
-{
-    // 按模块注册依赖
-    containerBuilder.RegisterModule(new RepositoryModule());
-    containerBuilder.RegisterModule(new ServiceModule());
-    containerBuilder.RegisterModule(new AutofacModule());
-});
+
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
 // 添加基础设施服务
 builder.Services.AddSqlSugar(builder.Configuration);
@@ -67,22 +63,41 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// 配置JWT认证
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+// 配置JWT认证// JWT configuration
+var jwt = builder.Configuration.GetSection("Jwt");
+var key = Encoding.UTF8.GetBytes(jwt["Key"]);
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
-        };
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwt["Issuer"],
+        ValidAudience = jwt["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+});
+
+// Configure Autofac Container
+//builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
+//{
+//    containerBuilder.RegisterModule(new AutofacModule(builder.Configuration));
+//});
+builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
+{
+    // 按模块注册依赖
+    containerBuilder.RegisterModule(new RepositoryModule());
+    containerBuilder.RegisterModule(new ServiceModule());
+    containerBuilder.RegisterModule(new AutofacModule(builder.Configuration));
+});
 
 // 配置CORS
 builder.Services.AddCors(options =>

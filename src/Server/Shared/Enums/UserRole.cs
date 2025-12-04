@@ -4,7 +4,7 @@ namespace Shared.Enums
 {
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
-    public enum UserRole
+    public enum UserRoleEnum
     {
         User = 1,
         Admin = 2,

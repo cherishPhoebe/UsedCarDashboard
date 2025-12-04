@@ -1,129 +1,67 @@
-﻿using Domain.Interfaces.Repositories;
-using Domain.Interfaces.Services;
-using Domain.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Domain.Entities;
+using Domain.Repositories;
+using Domain.Services;
+using Microsoft.Extensions.Configuration;
+using Shared.Auth;
+using Shared.Security;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Services
 {
-    public class AuthService : IAuthService
+    public class AuthService: IAuthService
     {
-        private readonly IUserRepository _userRepository;
-        private readonly IJwtService _jwtService;
-        private readonly Random _random = new();
+        private readonly IUserRepository _userRepo;
+        private readonly IPasswordHasher _hasher;
+        private readonly JwtHelper _jwt;
+        private readonly IConfiguration _config;
 
-        public AuthService(IUserRepository userRepository, IJwtService jwtService)
+        public AuthService(IUserRepository userRepo, IPasswordHasher hasher, JwtHelper jwt, IConfiguration config)
         {
-            _userRepository = userRepository;
-            _jwtService = jwtService;
+            _userRepo = userRepo;
+            _hasher = hasher;
+            _jwt = jwt;
+            _config = config;
         }
 
-        public string GenerateVerificationCode()
+        public async Task<(string accessToken, string refreshToken)> LoginAsync(string userName, string password)
         {
-            return _random.Next(1000, 9999).ToString();
+            var user = await _userRepo.GetByUserNameAsync(userName);
+            if (user == null) throw new UnauthorizedAccessException("Invalid credentials");
+            if (!_hasher.Verify(password, user.Salt ?? "", user.PasswordHash)) throw new UnauthorizedAccessException("Invalid credentials");
+
+            // roles for token claims
+            var roles = (await _userRepo.GetUserRolesAsync(user.Id)).Select(r => r.NormalizedName);
+            var accessToken = _jwt.CreateAccessToken(user.Id, user.UserName, roles);
+
+            // create refresh token (secure random GUID)
+            var refresh = Guid.NewGuid().ToString("N") + Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+            var expires = DateTime.UtcNow.AddDays(Convert.ToDouble(_config["Jwt:RefreshTokenExpirationDays"]));
+            var rt = new RefreshToken { UserId = user.Id, Token = refresh, ExpiresAt = expires, CreatedAt = DateTime.UtcNow };
+            await _userRepo.AddRefreshTokenAsync(rt);
+
+            return (accessToken, refresh);
         }
 
-        public string HashPassword(string password)
+
+        public async Task<(string accessToken, string refreshToken)> RefreshAsync(string refreshToken)
         {
-            using var sha256 = SHA256.Create();
-            var bytes = Encoding.UTF8.GetBytes(password);
-            var hash = sha256.ComputeHash(bytes);
-            return Convert.ToBase64String(hash);
+            var rt = await _userRepo.FindRefreshTokenAsync(refreshToken);
+            if (rt == null || rt.RevokedAt != null || rt.ExpiresAt <= DateTime.UtcNow) throw new UnauthorizedAccessException("Invalid refresh token");
+            var user = await _userRepo.GetByIdAsync(rt.UserId);
+            if (user == null) throw new UnauthorizedAccessException("User not found");
+
+            var roles = (await _userRepo.GetUserRolesAsync(user.Id)).Select(r => r.NormalizedName);
+            var newAccess = _jwt.CreateAccessToken(user.Id, user.UserName, roles);
+            var newRefresh = Guid.NewGuid().ToString("N") + Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+            var newExpires = DateTime.UtcNow.AddDays(Convert.ToDouble(_config["Jwt:RefreshTokenExpirationDays"]));
+
+            // revoke old, add new
+            await _userRepo.RevokeRefreshTokenAsync(rt.Id);
+            await _userRepo.AddRefreshTokenAsync(new RefreshToken { UserId = user.Id, Token = newRefresh, ExpiresAt = newExpires, CreatedAt = DateTime.UtcNow });
+
+            return (newAccess, newRefresh);
         }
 
-        public bool VerifyPassword(string password, string passwordHash)
-        {
-            var hashedInput = HashPassword(password);
-            return passwordHash == hashedInput;
-        }
 
-        public string GenerateJwtToken(User user)
-        {
-            return _jwtService.GenerateToken(user);
-        }
-
-        public async Task<AuthResponse> LoginAsync(LoginRequest request)
-        {
-            if (string.IsNullOrEmpty(request.VerificationCode) || request.VerificationCode.Length != 4)
-            {
-                return new AuthResponse { Success = false, Message = "验证码必须是4位数字" };
-            }
-
-            var user = await _userRepository.GetUserByUsernameAsync(request.Username);
-            if (user == null)
-            {
-                return new AuthResponse { Success = false, Message = "用户名或密码错误" };
-            }
-
-            if (!VerifyPassword(request.Password, user.PasswordHash))
-            {
-                return new AuthResponse { Success = false, Message = "用户名或密码错误" };
-            }
-
-            user.LastLogin = DateTime.UtcNow;
-            await _userRepository.UpdateUserAsync(user);
-
-            var token = GenerateJwtToken(user);
-
-            return new AuthResponse
-            {
-                Success = true,
-                Message = "登录成功",
-                Token = token,
-                User = new UserDto
-                {
-                    Id = user.Id,
-                    Username = user.Username,
-                    Email = user.Email,
-                    CreatedAt = user.CreatedAt,
-                    LastLogin = user.LastLogin
-                }
-            };
-        }
-
-        public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
-        {
-            if (await _userRepository.UserExistsAsync(request.Username))
-            {
-                return new AuthResponse { Success = false, Message = "用户名已存在" };
-            }
-
-            if (await _userRepository.GetUserByEmailAsync(request.Email) != null)
-            {
-                return new AuthResponse { Success = false, Message = "邮箱已被注册" };
-            }
-
-            var user = new User
-            {
-                Username = request.Username,
-                PasswordHash = HashPassword(request.Password),
-                Email = request.Email,
-                CreatedAt = DateTime.UtcNow,
-                LastLogin = DateTime.UtcNow
-            };
-
-            await _userRepository.CreateUserAsync(user);
-
-            var token = GenerateJwtToken(user);
-
-            return new AuthResponse
-            {
-                Success = true,
-                Message = "注册成功",
-                Token = token,
-                User = new UserDto
-                {
-                    Id = user.Id,
-                    Username = user.Username,
-                    Email = user.Email,
-                    CreatedAt = user.CreatedAt,
-                    LastLogin = user.LastLogin
-                }
-            };
-        }
     }
 }
