@@ -1,0 +1,39 @@
+// 颜色变量
+$primary-color: #409EFF;
+$success-color: #67C23A;
+$warning-color: #E6A23C;
+$danger-color: #F56C6C;
+$info-color: #909399;
+
+// 字体
+$font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+
+// 布局
+$header-height: 60px;
+$sidebar-width: 210px;
+$sidebar-collapsed-width: 54px;
+$tags-view-height: 34px;
+
+// 边框
+$border-color: #DCDFE6;
+$border-radius: 4px;
+
+// 阴影
+$box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+
+// 导出为CSS变量
+:root {
+  --primary-color: #{$primary-color};
+  --success-color: #{$success-color};
+  --warning-color: #{$warning-color};
+  --danger-color: #{$danger-color};
+  --info-color: #{$info-color};
+  --font-family: #{$font-family};
+  --header-height: #{$header-height};
+  --sidebar-width: #{$sidebar-width};
+  --sidebar-collapsed-width: #{$sidebar-collapsed-width};
+  --tags-view-height: #{$tags-view-height};
+  --border-color: #{$border-color};
+  --border-radius: #{$border-radius};
+  --box-shadow: #{$box-shadow};
+}
